@@ -1,6 +1,6 @@
 package textbased;
 
-public class Textbased {
+public class textbased {
 
     /**
      * @param args the command line arguments

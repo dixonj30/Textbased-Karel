@@ -198,7 +198,7 @@ public class World
         public  void actions() 
         {
             Scanner in = new Scanner(System.in);
-            List<String> zoom = new ArrayList<>();
+            List<String> user_input = new ArrayList<>();
             String new_input = new String();
             boolean check;
             System.out.println("Input instructions followed by "
@@ -209,35 +209,223 @@ public class World
                     + "he is facing)");
         
             while (true)
-            {
+            { // Reading in the users instructions
                 new_input = in.nextLine().toLowerCase();
                 check = new_input.equals("0");
                 if (check)
-                {
-                    break;
-                }
+                { break; }
 
-                zoom.add(new_input);
+                user_input.add(new_input);
 
             }
-            for (String z : zoom) 
+            
+            int line_count = doScript(0, 0, user_input);
+            System.out.println("Executed " + line_count + " lines of code");          
+        }    
+            
+            
+        public int doScript(int line_count, int scope, List<String> user_input)
+        {
+            int max_line_count = user_input.size();
+            
+            while (line_count < max_line_count) 
             { 
-                switch (z)
+                String z = user_input.get(line_count); // Gets the line we're
+                                                       // dealing with
+                String tempstr = new String(); // Used for swapping strings
+                String conditional = new String(); // Holds the condition
+                                                   // to be checked.
+                int repeat_num = 0; // The number of times to repeat
+                int next_line = 0; //Keeps the next line when dealing with scope
+                
+                if (scope > 0) // Checking for scope
                 {
-                    case "left": choiceMade(2);
-                          break;
-                    case "right": choiceMade(3);
-                          break;
-                    case "go": choiceMade(1); 
-                          break;
-                    default: System.out.println("Bad input: ");
-                             System.out.println(z);
-                             System.out.println("Continuing");
-
+                    int i = 0;
+                    for (i = 0; i < scope; i++)
+                    {
+                        if (!(z.startsWith("\t")))
+                        {
+                            return line_count; // Returning due to out of scope
+                        }
+                        
+                        else
+                        {
+                            z = z.substring(1); // Removing the tab
+                        }
+                    }
                 }
+                
+                if (z.matches("^repeat [0-9]{1,}$")) // Parsing repeat
+                {
+                    tempstr = z.substring(7); // Grabbing the number
+                    repeat_num = Integer.valueOf(tempstr);
+                    tempstr = z.substring(0, 6); // Grabbing the repeat
+                    z = tempstr;
+                }
+                
+                if(z.matches("^if !?(gem|home|wall)?")) // Parsing if
+                {
+                    conditional = z.substring(3); // Grabbing condition
+                    tempstr = z.substring(0, 2); // Grabbing if
+                    z = tempstr;
+                }
+                
+                if (z.matches("^while !?(gem|home|wall)?")) // Parsing while
+                {
+                    conditional = z.substring(6); // Grabbing condition
+                    tempstr = z.substring(0, 5); // Grabbing while
+                    z = tempstr;
+                }
+                
+                switch (z)
+                { // Controls the logic for each valid command
+                  // If input is something unexpected,
+                  // it skips the bad input, prints it, and continues
+                    case "left" : 
+                            choiceMade(2);
+                            break;
+                    case "right": 
+                            choiceMade(3);
+                            break;
+                    case "go"   : 
+                            choiceMade(1);
+                            break;
+                    case "repeat":  
+                            for (int i = 0; i < repeat_num; i++)
+                            {
+                                next_line = doScript((line_count + 1), 
+                                                       (scope + 1), user_input);
+                            }
+                            line_count = next_line;
+                            break;
+                    case "if"   :
+                            if (handleCondition(conditional))
+                            {
+                                next_line = doScript((line_count + 1), 
+                                                       (scope + 1), user_input);
+                            }
+                            
+                            else
+                            { // "else" case
+                                tempstr = "else";
+                                int i = 0;
+                                while (i < scope)
+                                { // Forming the string based on our scope
+                                    tempstr = "\t" + tempstr;
+                                    i++;
+                                }
+                                i = line_count + 1;
+                                while (! (user_input.get(i).matches(tempstr)))
+                                { // While the next line isn't our Else
+                                    i++;
+                                    if (i >= max_line_count)
+                                    { // Error checking
+                                        System.out.println("ERROR: "
+                                                + "Else expected after line "
+                                                + line_count);
+                                        return line_count;
+                                    }
+                                }
+                                next_line = doScript((i + 1), 
+                                                       (scope + 1), user_input);
+                             } // End "else" case
+                            
+                            line_count = next_line;
+                            break;
+                    case "while" :
+                            while (handleCondition(conditional))
+                            {
+                               next_line = doScript((line_count + 1), 
+                                                       (scope + 1), user_input); 
+                            }
+                            line_count = next_line;
+                            break;
+                    default: 
+                            System.out.println("Bad input: ");
+                            System.out.println(z);
+                            System.out.println("Continuing");
+                }
+                line_count = line_count + 1;
             }
-
+            return line_count;
         }
+        
+        public boolean handleCondition(String conditional)
+        { // Function to check if a conditional is true or false
+            char direction = player.GetDirection();
+            int x = 0;
+            int y = 0;
+            switch(direction) // Getting the correct x and y values to use
+            {
+                    case '^':
+                        x = 0;
+                        y = -1;
+                        break;
+                    case 'v':
+                        x = 0;
+                        y = 1;
+                        break;
+                    case '>':
+                        x = 1;
+                        y = 0;
+                        break;
+                    case '<':
+                        x = -1;
+                        y = 0;
+                        break;
+            }
+            
+            int newX = x + player.GetX(); // Getting x of next space
+            int newY = y + player.GetY(); // Getting y of next space
+            x = player.GetX(); // Current space x
+            y = player.GetY(); // Current space Y
+            
+            switch (conditional)
+            {
+                case "!gem" :
+                        if ( (player.isGemCollision(newX, newY, gems)) == -1)
+                        { return true; }
+                        
+                        else
+                        { return false; }
+                        
+                case "gem"  :
+                        if ( (player.isGemCollision(newX, newY, gems)) != -1)
+                        { return true; }
+                       
+                        else
+                        { return false; }
+                        
+                case "!wall":
+                        if (!player.isWallCollision(newX, newY, walls))
+                        { return true; }
+                        
+                        else
+                        { return false; }
+                case "wall" :
+                        if (player.isWallCollision(newX, newY, walls))
+                        { return true; }
+                        
+                        else
+                        { return false; }
+                case "!home":
+                        if (!player.isHomeCollision(newX, newY, home))
+                        { return true; }
+                        
+                        else
+                        { return false; }
+                case "home" :
+                        if (player.isHomeCollision(newX, newY, home))
+                        { return true; }
+                        
+                        else
+                        { return false; }
+            }
+           
+            return false; // Should never get here
+        }
+          
+        
         
         public void choiceMade(int choice)
         {

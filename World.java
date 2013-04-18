@@ -218,7 +218,7 @@ public class World
                 user_input.add(new_input);
 
             }
-            
+            System.out.println("\n\n");
             int line_count = doScript(0, 0, user_input);
             System.out.println("Executed " + line_count + " lines of code");          
         }    
@@ -230,7 +230,7 @@ public class World
             
             while (line_count < max_line_count) 
             { 
-                String z = user_input.get(line_count); // Gets the line we're
+                String current_line = user_input.get(line_count); // Gets the line we're
                                                        // dealing with
                 String tempstr = new String(); // Used for swapping strings
                 String conditional = new String(); // Holds the condition
@@ -240,65 +240,84 @@ public class World
                 
                 if (scope > 0) // Checking for scope
                 {
-                    int i = 0;
+                    int i;
                     for (i = 0; i < scope; i++)
                     {
-                        if (!(z.startsWith("\t")))
+                        if (!(current_line.startsWith("\t")))
                         {
                             return line_count; // Returning due to out of scope
                         }
                         
                         else
                         {
-                            z = z.substring(1); // Removing the tab
+                            current_line = current_line.substring(1); // Removing the tab
                         }
                     }
                 }
                 
-                if (z.matches("^repeat [0-9]{1,}$")) // Parsing repeat
+                if (current_line.matches("^repeat [0-9]{1,}$")) // Parsing repeat
                 {
-                    tempstr = z.substring(7); // Grabbing the number
+                    tempstr = current_line.substring(7); // Grabbing the number
                     repeat_num = Integer.valueOf(tempstr);
-                    tempstr = z.substring(0, 6); // Grabbing the repeat
-                    z = tempstr;
+                    tempstr = current_line.substring(0, 6); // Grabbing the repeat
+                    current_line = tempstr;
                 }
                 
-                if(z.matches("^if !?(gem|home|wall)?")) // Parsing if
+                if(current_line.matches("^if (not )?(gem|home|wall)?")) // Parsing if
                 {
-                    conditional = z.substring(3); // Grabbing condition
-                    tempstr = z.substring(0, 2); // Grabbing if
-                    z = tempstr;
+                    conditional = current_line.substring(3); // Grabbing condition
+                    tempstr = current_line.substring(0, 2); // Grabbing if
+                    current_line = tempstr;
                 }
                 
-                if (z.matches("^while !?(gem|home|wall)?")) // Parsing while
+                if (current_line.matches("^while (not )?(gem|home|wall)?")) // Parsing while
                 {
-                    conditional = z.substring(6); // Grabbing condition
-                    tempstr = z.substring(0, 5); // Grabbing while
-                    z = tempstr;
+                    conditional = current_line.substring(6); // Grabbing condition
+                    tempstr = current_line.substring(0, 5); // Grabbing while
+                    current_line = tempstr;
                 }
                 
-                switch (z)
+                switch (current_line)
                 { // Controls the logic for each valid command
                   // If input is something unexpected,
-                  // it skips the bad input, prints it, and continues
+                  // it halts execution and prints an appropriate error
+                  // Note: Since it is post-incremented, all uses of next_line
+                  // are reduced by 1 to account for the post increment
                     case "left" : 
                             choiceMade(2);
                             break;
+                        
                     case "right": 
                             choiceMade(3);
                             break;
+                        
                     case "go"   : 
                             choiceMade(1);
                             break;
+                        
                     case "repeat":  
                             for (int i = 0; i < repeat_num; i++)
                             {
                                 next_line = doScript((line_count + 1), 
                                                        (scope + 1), user_input);
+                                if (next_line > max_line_count)
+                                { // If an error was returned
+                                    return ++max_line_count;
+                                }
+                                
                             }
-                            line_count = next_line;
+                            line_count = next_line - 1;
                             break;
+                        
                     case "if"   :
+                            if(conditional.isEmpty())
+                            { // Error checking
+                                System.out.println ("ERROR: Expected condition"
+                                                  + " after if on line " +
+                                                    (line_count + 1));
+                                return ++max_line_count;
+                            }
+                        
                             if (handleCondition(conditional))
                             {
                                 next_line = doScript((line_count + 1), 
@@ -306,15 +325,13 @@ public class World
                             }
                             
                             else
-                            { // "else" case
+                            { // Successful Else case
                                 tempstr = "else";
-                                int i = 0;
-                                while (i < scope)
-                                { // Forming the string based on our scope
+                                for (int i = 0; i < scope; i++)
+                                { // Forming tempstr based on our scope
                                     tempstr = "\t" + tempstr;
-                                    i++;
                                 }
-                                i = line_count + 1;
+                                int i = line_count + 1;
                                 while (! (user_input.get(i).matches(tempstr)))
                                 { // While the next line isn't our Else
                                     i++;
@@ -322,30 +339,73 @@ public class World
                                     { // Error checking
                                         System.out.println("ERROR: "
                                                 + "Else expected after line "
-                                                + line_count);
-                                        return line_count;
+                                                + (line_count + 1));
+                                        return ++max_line_count;
                                     }
                                 }
                                 next_line = doScript((i + 1), 
                                                        (scope + 1), user_input);
                              } // End "else" case
                             
-                            line_count = next_line;
+                            line_count = next_line - 1;
                             break;
+                    
+                    case "else" : // Only falls in this after a successful If   
+                                  // Used to skip the unnecessary else and all
+                                  // statements within it
+                            for (int i = 0; i <= scope; i++)
+                            { // Forming tempstr based on scope
+                                tempstr = "\t" + tempstr;
+                            }
+                            while (!user_input.get(line_count).startsWith(tempstr))
+                            { // As long as the line isn't in our scope
+                                line_count++;
+                                if (line_count == max_line_count)
+                                { // If we've reached the end of the file
+                                    return line_count;
+                                }
+                             }
+                             
+                            break;
+                        
                     case "while" :
+                            int infinite_counter = 0;     
+                            if(conditional.isEmpty())
+                            { // Error checking
+                                System.out.println ("ERROR: Expected condition"
+                                                  + " after while on line " +
+                                                    (line_count + 1));
+                                return ++max_line_count;
+                            }
+                        
                             while (handleCondition(conditional))
                             {
-                               next_line = doScript((line_count + 1), 
+                                infinite_counter++;
+                                next_line = doScript((line_count + 1), 
                                                        (scope + 1), user_input); 
+                                if (infinite_counter > 100000)
+                                { // Assuming a loop that iterates over 100K
+                                  // times is an infinite loop
+                                    System.out.println("ERROR: Infinite loop "
+                                                     + "detected in while");
+                                    return ++max_line_count;
+                                }
+                                
+                                if (next_line > max_line_count)
+                                { // If an error was returned in this loop
+                                    return max_line_count;
+                                }
                             }
-                            line_count = next_line;
+                            line_count = next_line - 1;
                             break;
+                        
                     default: 
-                            System.out.println("Bad input: ");
-                            System.out.println(z);
-                            System.out.println("Continuing");
+                            System.out.println("ERROR: Unrecognized syntax");
+                            System.out.println(current_line);
+                            System.out.println("on line " + (line_count + 1));
+                            return max_line_count;
                 }
-                line_count = line_count + 1;
+                ++line_count;
             }
             return line_count;
         }
@@ -382,7 +442,7 @@ public class World
             
             switch (conditional)
             {
-                case "!gem" :
+                case "not gem" :
                         if ( (player.isGemCollision(newX, newY, gems)) == -1)
                         { return true; }
                         
@@ -396,7 +456,7 @@ public class World
                         else
                         { return false; }
                         
-                case "!wall":
+                case "not wall":
                         if (!player.isWallCollision(newX, newY, walls))
                         { return true; }
                         
@@ -408,7 +468,7 @@ public class World
                         
                         else
                         { return false; }
-                case "!home":
+                case "not home":
                         if (!player.isHomeCollision(newX, newY, home))
                         { return true; }
                         

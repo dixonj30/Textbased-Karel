@@ -222,7 +222,10 @@ public class World
                 { 
                     break; 
                 }
-                user_input.add(new_input);
+                if (new_input.trim().length() > 0)
+                { // If the line isn't blank
+                    user_input.add(new_input); // Adding it
+                }
             }
             System.out.println("---------------------------------------------"
                                 + "---------------------------");
@@ -270,6 +273,12 @@ public class World
                         {
                             current_line = current_line.substring(1); // Removing the tab
                         }
+                    }
+                    if (current_line.startsWith("\t"))
+                    {
+                        System.out.println("ERROR: undefined scope on line "
+                                          + (line_count + 1));
+                        return throw_error;
                     }
                 }
                 
@@ -391,23 +400,22 @@ public class World
                     case "else" : // Only falls in this after a successful If   
                                   // This code is used to skip the unnecessary
                                   // Else and all statements within it
-                            for (int i = 0; i <= scope; i++)
-                            { // Forming tempstr based on scope
-                                tempstr = "\t" + tempstr;
-                            }
-                            while (!user_input.get(line_count).startsWith(tempstr))
-                            { // As long as the line isn't in our scope
+                            
+                            tempstr = "\t";
+                            do
+                            { // As long as the line exceeds our scope
                                 line_count++;
-                                if (line_count == max_line_count)
+                                if (line_count >= max_line_count)
                                 { // If we've reached the end of the file
                                     return line_count;
                                 }
-                             }
+                             } while (user_input.get(line_count).startsWith(tempstr, scope));
                              
                             break; // End "If-Else" case
                         
                     case "while" :
                             int infinite_counter = 0;
+                            
                             if(conditional.isEmpty())
                             { // Checking if the conditional is blank
                                 System.out.println ("ERROR: Expected condition"
@@ -415,18 +423,18 @@ public class World
                                                    +  (line_count + 1));
                                 return throw_error;
                             }
-                            
+                            int while_line = line_count;
                             while (handleCondition(conditional))
                             {
                                 infinite_counter++;
-                                next_line = doScript((line_count + 1), 
+                                next_line = doScript((while_line + 1), 
                                                      (scope + 1), user_input); 
                                 if (infinite_counter > 100000)
                                 { // Assuming a loop that iterates over 100K
                                   // times is an infinite loop
                                     System.out.println("ERROR: Infinite loop "
                                                       + "detected in While"
-                                                      + "on line " 
+                                                      + " on line " 
                                                       + (line_count + 1));
                                     return throw_error; 
                                 }
@@ -435,8 +443,8 @@ public class World
                                 { // If an error was returned in this loop
                                     return throw_error;
                                 }
+                                line_count = next_line - 1;
                             }
-                            line_count = next_line - 1;
                             break; // End "While" case
                         
                     default: 

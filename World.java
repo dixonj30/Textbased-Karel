@@ -429,7 +429,7 @@ public class World
                                 infinite_counter++;
                                 next_line = doScript((while_line + 1), 
                                                      (scope + 1), user_input); 
-                                if (infinite_counter > 100000)
+                                if (infinite_counter > 10000)
                                 { // Assuming a loop that iterates over 100K
                                   // times is an infinite loop
                                     System.out.println("ERROR: Infinite loop "

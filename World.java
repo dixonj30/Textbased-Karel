@@ -400,17 +400,18 @@ public class World
                     case "else" : // Only falls in this after a successful If   
                                   // This code is used to skip the unnecessary
                                   // Else and all statements within it
-                            
+                            System.out.println("Am I here? Line " + line_count);
+                            System.out.println("Scope: " + scope);
                             tempstr = "\t";
                             do
                             { // As long as the line exceeds our scope
-                                line_count++;
+                                ++line_count;
                                 if (line_count >= max_line_count)
                                 { // If we've reached the end of the file
                                     return line_count;
                                 }
                              } while (user_input.get(line_count).startsWith(tempstr, scope));
-                             
+                             line_count -= 1;
                             break; // End "If-Else" case
                         
                     case "while" :
@@ -506,7 +507,7 @@ public class World
                         
                 case "not wall":
                         if (!player.isWallCollision(newX, newY, walls))
-                        { return true; }
+                        {  return true; }
                         
                         else
                         { return false; }

@@ -359,28 +359,7 @@ public class World
                                                    + " after If on line " 
                                                    +  (line_count + 1));
                                 return throw_error;
-                            }
-                            
-                            // Finding the accompanying Else statement
-                            tempstr = "else";
-                            for (int i = 0; i < scope; i++)
-                            { // Forming tempstr based on our scope
-                                tempstr = "\t" + tempstr;
-                            }
-                            int else_line = line_count + 1;//Line the Else is on
-                            while (! (user_input.get(else_line).matches(tempstr)))
-                            { // While the next line isn't our Else
-                                else_line++;
-                                if (else_line >= max_line_count)
-                                { // If we can't find an accompanying Else
-                                    System.out.println("ERROR: Accompanying "
-                                                      + "Else statement not found for"
-                                                      + " If statement on line "
-                                                      + (line_count + 1));
-                                    return throw_error;
-                                }
-                            }
-                            // End check for accompanying Else
+                            }                           
                             
                             if (handleCondition(conditional))
                             { // Successful If case
@@ -390,6 +369,22 @@ public class World
                             
                             else
                             { // Successful Else case
+                                // Finding the accompanying Else statement
+                                tempstr = "else";
+                                for (int i = 0; i < scope; i++)
+                                { // Forming tempstr based on our scope
+                                    tempstr = "\t" + tempstr;
+                                }
+                                int else_line = line_count + 1;//Line the Else is on
+                                while (! (user_input.get(else_line).matches(tempstr)))
+                                { // While the next line isn't our Else
+                                    else_line++;
+                                    if (else_line >= max_line_count)
+                                    { // If we can't find an accompanying Else
+                                        return line_count;
+                                    }
+                                }
+                                // End check for accompanying Else
                                 next_line = doScript((else_line + 1), 
                                                     (scope + 1), user_input);
                              }
@@ -400,8 +395,6 @@ public class World
                     case "else" : // Only falls in this after a successful If   
                                   // This code is used to skip the unnecessary
                                   // Else and all statements within it
-                            System.out.println("Am I here? Line " + line_count);
-                            System.out.println("Scope: " + scope);
                             tempstr = "\t";
                             do
                             { // As long as the line exceeds our scope

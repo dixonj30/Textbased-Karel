@@ -141,8 +141,9 @@ public class World
         {
             current_map[i] = convert_map[i].toCharArray();
         }
+        // Making sure old_x and old_y were found
         if ((old_x != -1) && (old_y != -1))
-        { // Making sure old_x and old_y were found
+        { 
           current_map[old_y][old_x] = ' '; // Replacing Karel's old position
         }
         current_map[new_y][new_x] = symbol; // Putting Karel in his new position
@@ -214,25 +215,30 @@ public class World
             System.out.println("---------------------------------------------"
                                 + "---------------------------");
         
+            // Reading in the users instructions
             while (true)
-            { // Reading in the users instructions
+            { 
                 new_input = in.nextLine().toLowerCase();
                 check = new_input.equals("0");
                 if (check)
                 { 
                     break; 
                 }
+                
+                // If the line isn't blank, add it to user_input
                 if (new_input.trim().length() > 0)
-                { // If the line isn't blank
-                    user_input.add(new_input); // Adding it
+                { 
+                    user_input.add(new_input);
                 }
             }
             System.out.println("---------------------------------------------"
                                 + "---------------------------");
             System.out.println("\n\n");
             int line_count = doScript(0, 0, user_input); // Running the script          
+            
+            // If an error was returned
             if (line_count > user_input.size())
-            { // If an error was returned
+            {
                 System.out.println("Press enter to continue...");
                 in.nextLine();
             }
@@ -259,7 +265,8 @@ public class World
                 int next_line = 0; //Keeps the next line when dealing with scope
                 final int throw_error = max_line_count + 1; // Error return value
                 
-                if (scope > 0) // Checking for valid scope
+                // Checking for valid scope
+                if (scope > 0) 
                 {
                     int i;
                     for (i = 0; i < scope; i++)
@@ -283,8 +290,7 @@ public class World
                 }
                 
                 /* Parsing the current line for recognizable Syntax */
-                
-                if (current_line.matches("^repeat [0-9]{1,}$")) // Parsing repeat
+                if (current_line.matches("^repeat [0-9]{1,}$"))
                 {
                     tempstr = current_line.substring(7); // Grabbing the number
                     repeat_num = Integer.valueOf(tempstr);
@@ -292,20 +298,19 @@ public class World
                     current_line = tempstr;
                 }
                 
-                if(current_line.matches("^if (not )?(gem|home|wall)$")) // Parsing if
+                if(current_line.matches("^if (not )?(gem|home|wall)$"))
                 {
                     conditional = current_line.substring(3); // Grabbing condition
                     tempstr = current_line.substring(0, 2); // Grabbing if
                     current_line = tempstr;
                 }
                 
-                if (current_line.matches("^while (not )?(gem|home|wall)$")) // Parsing while
+                if (current_line.matches("^while (not )?(gem|home|wall)$"))
                 {
                     conditional = current_line.substring(6); // Grabbing condition
                     tempstr = current_line.substring(0, 5); // Grabbing while
                     current_line = tempstr;
                 }
-                
                 /* End Parsing */ 
                 
                 current_line = current_line.trim();
@@ -330,9 +335,9 @@ public class World
                             break;
                         
                     case "repeat":  
+                            // Checking if the repeat integer is out of range 
                             if ((repeat_num < 1) || (repeat_num > 999))
-                            { // Checking if the repeat integer is too small or
-                              // too large  
+                            { 
                                 System.out.println("ERROR: Repeat value not "
                                                   + "in valid range (1-999) "
                                                   + "on line " + (line_count + 1));
@@ -343,18 +348,22 @@ public class World
                             {
                                 next_line = doScript((line_count + 1), 
                                                     (scope + 1), user_input);
+                                
+                                // If an error was returned
                                 if (next_line > max_line_count)
-                                { // If an error was returned
+                                { 
                                     return throw_error;
                                 }
                                 
                             }
                             line_count = next_line - 1;
-                            break; // End "Repeat" case
+                            break; 
+                            // End "Repeat" case
                         
                     case "if"   :
+                            // Checking if the conditional is blank
                             if(conditional.isEmpty())
-                            { // Checking if the conditional is blank
+                            { 
                                 System.out.println ("ERROR: Expected condition"
                                                    + " after If on line " 
                                                    +  (line_count + 1));
@@ -371,20 +380,27 @@ public class World
                             { // Successful Else case
                                 // Finding the accompanying Else statement
                                 tempstr = "else";
+                                
+                                // Forming tempstr based on our scope
                                 for (int i = 0; i < scope; i++)
-                                { // Forming tempstr based on our scope
+                                {
                                     tempstr = "\t" + tempstr;
                                 }
                                 int else_line = line_count + 1;//Line the Else is on
+                                
+                                // While the next line isn't our Else
                                 while (! (user_input.get(else_line).matches(tempstr)))
-                                { // While the next line isn't our Else
+                                {
                                     else_line++;
+                                    
+                                    // If we can't find an accompanying Else
                                     if (else_line >= max_line_count)
-                                    { // If we can't find an accompanying Else
+                                    {
                                         return line_count;
                                     }
                                 }
                                 // End check for accompanying Else
+                               
                                 next_line = doScript((else_line + 1), 
                                                     (scope + 1), user_input);
                              }
@@ -392,26 +408,32 @@ public class World
                             line_count = next_line - 1;
                             break;
                     
-                    case "else" : // Only falls in this after a successful If   
+                    case "else" : // Only falls in this after a successful 'If'   
                                   // This code is used to skip the unnecessary
                                   // Else and all statements within it
                             tempstr = "\t";
+                            
+                            // As long as the line exceeds our scope
                             do
-                            { // As long as the line exceeds our scope
+                            {
                                 ++line_count;
+                                
+                                // If we've reached the end of the file
                                 if (line_count >= max_line_count)
-                                { // If we've reached the end of the file
+                                { 
                                     return line_count;
                                 }
                              } while (user_input.get(line_count).startsWith(tempstr, scope));
                              line_count -= 1;
-                            break; // End "If-Else" case
+                            break;
+                            // End "If-Else" case
                         
                     case "while" :
                             int infinite_counter = 0;
                             
+                            // Checking if the conditional is blank
                             if(conditional.isEmpty())
-                            { // Checking if the conditional is blank
+                            { 
                                 System.out.println ("ERROR: Expected condition"
                                                    + " on line " 
                                                    +  (line_count + 1));
@@ -423,9 +445,11 @@ public class World
                                 infinite_counter++;
                                 next_line = doScript((while_line + 1), 
                                                      (scope + 1), user_input); 
+                                
+                                /* Assuming a loop that iterates over 100K
+                                   times is an infinite loop */
                                 if (infinite_counter > 10000)
-                                { // Assuming a loop that iterates over 100K
-                                  // times is an infinite loop
+                                {
                                     System.out.println("ERROR: Infinite loop "
                                                       + "detected in While"
                                                       + " on line " 
@@ -433,13 +457,15 @@ public class World
                                     return throw_error; 
                                 }
                                 
+                                // If an error was returned in this loop
                                 if (next_line > max_line_count)
-                                { // If an error was returned in this loop
+                                {
                                     return throw_error;
                                 }
                                 line_count = next_line - 1;
                             }
-                            break; // End "While" case
+                            break;
+                             // End "While" case
                         
                     default: 
                             System.out.println("ERROR: Unrecognized syntax:");
@@ -452,12 +478,15 @@ public class World
             return line_count;
         }
         
+        // Function to check if a conditional is true or false
         public boolean handleCondition(String conditional)
-        { // Function to check if a conditional is true or false
+        {
             char direction = player.GetDirection();
             int x = 0;
             int y = 0;
-            switch(direction) // Getting the correct x and y values to use
+            
+            // Getting the correct x and y values to use
+            switch(direction)
             {
                     case '^':
                         x = 0;
